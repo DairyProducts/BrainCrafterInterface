@@ -126,6 +126,7 @@ if __name__ == "__main__":
     board = init_cyton(port)
     
     baseline = []
+    baseline_filtered = []
     recordings = []
     recordings_filtered = []
     
@@ -159,10 +160,15 @@ if __name__ == "__main__":
     for i in range(len(recordings)):
         filtered_data = filter_eeg(recordings[i][1])
         recordings_filtered.append((recordings[i][0], filtered_data))
+        filtered_data = filter_eeg(baseline[i][1])
+        baseline_filtered.append((baseline[i][0], filtered_data))
+
     
     # save to files
     base_output = np.array(baseline, dtype=object)
     np.save(f"{DATA_DIR}/baseline-session-{SES_NUMBER}.npy", base_output)
+    filtered_base_output = np.array(baseline_filtered, dtype=object)
+    np.save(f"{DATA_DIR}/filtered-baseline-session-{SES_NUMBER}.npy", filtered_base_output)
     raw_output = np.array(recordings, dtype=object)
     np.save(f"{DATA_DIR}/raw-session-{SES_NUMBER}.npy", raw_output)
     filtered_output = np.array(recordings_filtered, dtype=object)
