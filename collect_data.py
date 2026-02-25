@@ -160,8 +160,9 @@ if __name__ == "__main__":
     for i in range(len(recordings)):
         filtered_data = filter_eeg(recordings[i][1])
         recordings_filtered.append((recordings[i][0], filtered_data))
-        filtered_data = filter_eeg(baseline[i][1])
-        baseline_filtered.append((baseline[i][0], filtered_data))
+        
+    filtered_data = filter_eeg(baseline[0][1])
+    baseline_filtered.append((baseline[0][0], filtered_data))
 
     
     # save to files
