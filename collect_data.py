@@ -7,9 +7,12 @@ from brainflow.board_shim import BoardShim, BrainFlowInputParams
 from serial import Serial
 import serial
 import random
+import os
 
 CYTON_SAMPLING_RATE = 250  # Hz
 RECORDING_DURATION = 3     # seconds
+BASELINE_DURATION = 30
+PREP_DURATION = 5
 NUM_CHANNELS = 8
 
 FILTER_LOW_FREQ = 8        # Hz
@@ -19,7 +22,9 @@ CYTON_BOARD_ID = 0
 BAUD_RATE = 115200
 ANALOGUE_MODE = '/2'
 
+SES_NUMBER = 1
 NUM_TRIALS = 64
+DATA_DIR = "data/2-25"
 
 def find_openbci_port():
     if sys.platform.startswith('win'):
@@ -53,9 +58,8 @@ def find_openbci_port():
     
     return openbci_port
 
-def record_eeg(serial_port):
-    print("recording")
-    
+def init_cyton(serial_port):
+    print("Initializing Cyton")
     params = BrainFlowInputParams()
     if CYTON_BOARD_ID != 6:
         params.serial_port = serial_port
@@ -65,10 +69,32 @@ def record_eeg(serial_port):
     board = BoardShim(CYTON_BOARD_ID, params)
     board.prepare_session()
     
-    board.config_board('/0')
-    board.config_board('//')
-    board.config_board(ANALOGUE_MODE)
+    res = board.config_board('/0')
+    print(res)
+    res = board.config_board('//')
+    print(res)
+    res = board.config_board(ANALOGUE_MODE)
+    print(res)
 
+    print("Init done.")
+    return board
+
+def record_bl(board):
+    print("Recording baseline:")
+    board.start_stream(45000)
+    time.sleep(BASELINE_DURATION)
+    
+    data = board.get_board_data()
+    eeg_channels = board.get_eeg_channels(CYTON_BOARD_ID)
+    eeg = data[eeg_channels]
+    
+    board.stop_stream()
+    
+    print("Recording done.")
+    return eeg
+
+def record_eeg(board):
+    print("Recording data:")
     board.start_stream(45000)
     time.sleep(RECORDING_DURATION)
     
@@ -77,10 +103,14 @@ def record_eeg(serial_port):
     eeg = data[eeg_channels]
     
     board.stop_stream()
-    board.release_session()
     
+    print("Recording done.")
+    return eeg
+
+def filter_eeg(raw_eeg):
+    # Butterworth band pass filter
     filtered_eeg = mne.filter.filter_data(
-        eeg, 
+        raw_eeg, 
         sfreq=CYTON_SAMPLING_RATE, 
         l_freq=FILTER_LOW_FREQ, 
         h_freq=FILTER_HIGH_FREQ, 
@@ -88,20 +118,52 @@ def record_eeg(serial_port):
         iir_params=dict(order=3, ftype='butter'),
         verbose=False
     )
-    
-    print("recording done")
+
     return filtered_eeg
 
 if __name__ == "__main__":
     port = find_openbci_port()
-    recordings = []
-    movements = ["left foot", "right foot", "tongue", "do nothing"]
-    for i in range(NUM_TRIALS):
-        trial_movement = movements[random.randint(0, len(movements) - 1)]
-        print(f"trial {i + 1}/{NUM_TRIALS}")
-        print(f"movement: {trial_movement}")
-        eeg_data = record_eeg(port)
-        recordings.append((trial_movement, eeg_data))
+    board = init_cyton(port)
     
-    outputarray = np.array(recordings, dtype=object)
-    np.save("recordings.npy", outputarray)
+    baseline = []
+    recordings = []
+    recordings_filtered = []
+    
+    os.makedirs(DATA_DIR, exist_ok=True)
+    
+    movements = ["stomp left", "stomp right", "flick tongue", "no action"]
+    try:
+        # record a baseline
+        print("preparing to record baseline...")
+        time.sleep(PREP_DURATION)
+        raw_data = record_bl(board)
+        baseline.append(("no action", raw_data))
+        
+        # run trials
+        print("preparing to run trials...")
+        time.sleep(PREP_DURATION)
+        
+        print("running trials")
+        for i in range(NUM_TRIALS):
+            trial_movement = movements[random.randint(0, len(movements) - 1)]
+            print("-" * 20)
+            print(f"trial {i + 1}/{NUM_TRIALS}")
+            print(f"movement: {trial_movement}")
+            # TODO: delay here? discuss in lab
+            raw_data = record_eeg(board)
+            recordings.append((trial_movement, raw_data))
+    finally:
+        board.release_session()
+    
+    # filter data. note recordings of form [(tm, data), ...]
+    for i in range(len(recordings)):
+        filtered_data = filter_eeg(recordings[i][1])
+        recordings_filtered.append((recordings[i][0], filtered_data))
+    
+    # save to files
+    base_output = np.array(baseline, dtype=object)
+    np.save(f"{DATA_DIR}/baseline-session-{SES_NUMBER}.npy", base_output)
+    raw_output = np.array(recordings, dtype=object)
+    np.save(f"{DATA_DIR}/raw-session-{SES_NUMBER}.npy", raw_output)
+    filtered_output = np.array(recordings_filtered, dtype=object)
+    np.save(f"{DATA_DIR}/filtered-session-{SES_NUMBER}.npy", filtered_output)
