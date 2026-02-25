@@ -2,14 +2,18 @@ import glob
 import sys
 import time
 import numpy as np
+import mne
 from brainflow.board_shim import BoardShim, BrainFlowInputParams
 from serial import Serial
 import serial
 import random
 
-SAMPLING_RATE = 60.02  # Hz
-RECORDING_DURATION = 3 # seconds
+CYTON_SAMPLING_RATE = 250  # Hz
+RECORDING_DURATION = 3     # seconds
 NUM_CHANNELS = 8
+
+FILTER_LOW_FREQ = 8        # Hz
+FILTER_HIGH_FREQ = 30      # Hz
 
 CYTON_BOARD_ID = 0
 BAUD_RATE = 115200
@@ -75,8 +79,18 @@ def record_eeg(serial_port):
     board.stop_stream()
     board.release_session()
     
+    filtered_eeg = mne.filter.filter_data(
+        eeg, 
+        sfreq=CYTON_SAMPLING_RATE, 
+        l_freq=FILTER_LOW_FREQ, 
+        h_freq=FILTER_HIGH_FREQ, 
+        method='iir',
+        iir_params=dict(order=3, ftype='butter'),
+        verbose=False
+    )
+    
     print("recording done")
-    return eeg
+    return filtered_eeg
 
 if __name__ == "__main__":
     port = find_openbci_port()
