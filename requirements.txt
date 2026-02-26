@@ -1,4 +1,6 @@
 brainflow==5.20.1
 mne==1.11.0
 numpy==2.4.2
+psychopy==2026.1.0
 pyserial==3.5
+scipy==1.17.1
