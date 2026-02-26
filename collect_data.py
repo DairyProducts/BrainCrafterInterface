@@ -1,29 +1,25 @@
-import glob
+import os
 import sys
 import time
-import numpy as np
-import mne
-from brainflow.board_shim import BoardShim, BrainFlowInputParams, BoardIds
-from serial import Serial
-import serial
 import random
-import os
-
+import glob
 from threading import Thread, Event
 from queue import Queue
 
-from psychopy import visual, core
-from psychopy.hardware import keyboard
+import serial
+from brainflow.board_shim import BoardShim, BrainFlowInputParams, BoardIds
+from psychopy import core
+import psychopy.visual
+import psychopy.event
+
+import numpy as np
 from scipy import signal
 import pickle
+import mne
 
 width = 1536
 height = 864
 aspect_ratio = width/height
-
-import psychopy.visual
-import psychopy.event
-from psychopy import core
 
 CYTON_SAMPLING_RATE = 250  # Hz
 RECORDING_DURATION = 4.5   # seconds
@@ -56,7 +52,7 @@ text = psychopy.visual.TextStim(win=win, height=0.145, color='white', units='nor
 def create_photosensor_dot(window, size=2/8*0.7):
     width, height = window.size
     ratio = width/height
-    return visual.Rect(win=window, units="norm", width=size, height=size * ratio, 
+    return psychopy.visual.Rect(win=window, units="norm", width=size, height=size * ratio, 
                         fillColor='white', lineWidth = 0, pos = [1 - size/2, -1 - size/8]
     )
     
