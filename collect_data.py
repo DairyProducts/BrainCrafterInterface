@@ -18,13 +18,13 @@ import mne
 WIDTH = 1536               # px
 HEIGHT = 864               # px
 RECORDING_DURATION = 4.5   # seconds
-BASELINE_DURATION = 5      # seconds
+BASELINE_DURATION = 30     # seconds
 PREP_DURATION = 5          # seconds
 BREAK_DURATION = 0.75      # seconds
-SES_NUMBER = 2
-NUM_TRIALS = 5
-DATA_DIR = "data/2-26"
-FAKE_BOARD = True
+SES_NUMBER = 1
+NUM_TRIALS = 30
+DATA_DIR = "data/3-4"
+FAKE_BOARD = False
 
 # things not NOT change
 CYTON_SAMPLING_RATE = 250  # Hz
@@ -40,7 +40,7 @@ win = psychopy.visual.Window(
         units="norm",
         checkTiming = True,
         allowGUI = False,
-        fullscr=False
+        fullscr = True
     )
 
 text = psychopy.visual.TextStim(win=win, height=0.145, color='white', units='norm', font="Helvetica")
@@ -167,6 +167,7 @@ def get_data(board, queue_in, stop_event):
         eeg_in = data_in[board.get_eeg_channels(CYTON_BOARD_ID)]
         aux_in = data_in[board.get_analog_channels(CYTON_BOARD_ID)]
         timestamp_in = data_in[board.get_timestamp_channel(CYTON_BOARD_ID)]
+        print("data_in: ", eeg_in.shape, aux_in.shape, data_in.shape)
         if len(timestamp_in) > 0:
             queue_in.put((eeg_in, aux_in, timestamp_in))
         time.sleep(0.1)
@@ -264,17 +265,21 @@ if __name__ == "__main__":
                 recordings.append((trial_movement, raw_data))
                 print(f"Trial {i+1}/{NUM_TRIALS} ({trial_movement}): eeg shape {raw_data.shape} saved.")
             else:
-                while len(trial_ends) <= i:
+				# while len(trial_ends) <= i:
+                while True:
                     while not queue_in.empty():
                         eeg_in, aux_in, timestamp_in = queue_in.get()
                         eeg_continuous = np.concatenate((eeg_continuous, eeg_in), axis=1)
                         aux_continuous = np.concatenate((aux_continuous, aux_in), axis=1)
                     # this print for debugging
-                    print(f"aux ch1 range: min={aux_continuous[1].min():.2f} max={aux_continuous[1].max():.2f}")
+                    # print(f"aux ch1 range: min={aux_continuous[1].min():.2f} max={aux_continuous[1].max():.2f}")
                     photo_trigger = (aux_continuous[1] > 20).astype(int)
                     trial_starts = np.where(np.diff(photo_trigger) >= 0.9)[0]
                     trial_ends = np.where(np.diff(photo_trigger) <= -0.9)[0]
 
+                    trial_samples = int(RECORDING_DURATION * CYTON_SAMPLING_RATE)
+                    if len(trial_starts) > i and eeg_continuous.shape[1] >= trial_starts[i] + trial_samples:
+                        break
                 print("Adding trial to recordings...")
                 trial_samples = int(RECORDING_DURATION * CYTON_SAMPLING_RATE)
                 trial_start_sample = trial_starts[i]
