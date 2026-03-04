@@ -46,6 +46,7 @@ win = psychopy.visual.Window(
 text = psychopy.visual.TextStim(win=win, height=0.145, color='white', units='norm', font="Helvetica")
 
 # psychopy helpers (i hate psychopy bruh)
+# true
 def init_photosensor_dot(window, size=2/8*0.7):
     w, h = window.size
     ratio = w/h
