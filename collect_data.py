@@ -10,6 +10,7 @@ import serial
 from serial import Serial
 from brainflow.board_shim import BoardShim, BrainFlowInputParams, BoardIds
 import psychopy.visual
+import random
 
 import numpy as np
 import mne
@@ -18,12 +19,12 @@ import mne
 WIDTH = 1536               # px
 HEIGHT = 864               # px
 RECORDING_DURATION = 4.5   # seconds
-BASELINE_DURATION = 30     # seconds
+BASELINE_DURATION = 20     # seconds
 PREP_DURATION = 5          # seconds
-BREAK_DURATION = 0.75      # seconds
-SES_NUMBER = 1
-NUM_TRIALS = 30
-DATA_DIR = "data/3-4"
+BREAK_DURATION = 1         # seconds
+SES_NUMBER = 9
+NUM_TRIALS = 20
+DATA_DIR = "data/3-4/joshfoot"
 FAKE_BOARD = False
 
 # things not NOT change
@@ -168,8 +169,8 @@ def get_data(board, queue_in, stop_event):
         eeg_in = data_in[board.get_eeg_channels(CYTON_BOARD_ID)]
         aux_in = data_in[board.get_analog_channels(CYTON_BOARD_ID)]
         timestamp_in = data_in[board.get_timestamp_channel(CYTON_BOARD_ID)]
-        print("data_in: ", eeg_in.shape, aux_in.shape, data_in.shape)
         if len(timestamp_in) > 0:
+            print("data_in: ", eeg_in.shape, aux_in.shape, data_in.shape, timestamp_in.shape)
             queue_in.put((eeg_in, aux_in, timestamp_in))
         time.sleep(0.1)
 
@@ -217,7 +218,8 @@ if __name__ == "__main__":
     os.makedirs(DATA_DIR, exist_ok=True)
     
     # movements = ["stomp left", "stomp right", "flick tongue", "no action"]
-    movements = ["stomp right", "no action"]
+    # movements = ["clench right foot", "no action"]
+    movements = ["playing minecraft"]
     try:
         # record a baseline
         change_window(black, f"collecting baseline in {str(PREP_DURATION)}")
@@ -243,6 +245,7 @@ if __name__ == "__main__":
         for i in range(NUM_TRIALS):
             trial_movement = movements[random.randint(0, len(movements) - 1)]
             
+            time.sleep(random.uniform(0, 0.2))
             # intertrial: black dot, draw movement to screen
             change_window(black, trial_movement)
             time.sleep(BREAK_DURATION)
@@ -252,6 +255,7 @@ if __name__ == "__main__":
             time.sleep(RECORDING_DURATION)
             # posttrial: black dot, remove movement to prep for next one
             change_window(black)
+            
             
             # data collection
             if FAKE_BOARD:
@@ -272,6 +276,7 @@ if __name__ == "__main__":
                         eeg_in, aux_in, timestamp_in = queue_in.get()
                         eeg_continuous = np.concatenate((eeg_continuous, eeg_in), axis=1)
                         aux_continuous = np.concatenate((aux_continuous, aux_in), axis=1)
+                        print("aux: ", aux_continuous)
                     # this print for debugging
                     # print(f"aux ch1 range: min={aux_continuous[1].min():.2f} max={aux_continuous[1].max():.2f}")
                     photo_trigger = (aux_continuous[1] > 20).astype(int)
@@ -287,6 +292,7 @@ if __name__ == "__main__":
                 raw_data = np.copy(eeg_continuous[:, trial_start_sample:trial_start_sample + trial_samples])
                 recordings.append((trial_movement, raw_data))
                 print(f"Trial {i+1}/{NUM_TRIALS} ({trial_movement}): eeg shape {raw_data.shape} saved.")
+                time.sleep(0.05)
     finally:
         stop_event.set()
         board.stop_stream()
