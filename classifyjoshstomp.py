@@ -19,6 +19,11 @@ for session in SESSIONS:
         filtered_session[i][1] = filtered_session[i][1][CHANNELS, 62:-100]
     alltrials = np.concatenate((alltrials, filtered_session), axis=0)
 
+filtered_session = np.load(f"data/3-4/joshfoot/filtered-session-9.npy", allow_pickle=True)
+for i in range(len(filtered_session)):
+    filtered_session[i][1] = filtered_session[i][1][CHANNELS, 62:-100]
+alltrials = np.concatenate((alltrials, filtered_session), axis=0)
+
 labels = np.array([1 if trial[0] == 'stomp right' else 0 for trial in alltrials])
 eeg = np.array([trial[1] for trial in alltrials])
 
