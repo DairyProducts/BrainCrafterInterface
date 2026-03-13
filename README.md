@@ -1,7 +1,10 @@
 # BrainCrafterInterface
 An EEG-based BCI that classifies motor signals generated from movement and uses them to press keys, allowing movement-based control for different games (we tested it on Minecraft, but theoretically it should work for other games too). 
 
-This was made for the final project for COGS 189 (WI26). Our paper is ~~available at~~ still in the works.
+This was made for the final project for COGS 189 (WI26). Our write-up is ~~available at~~ still in the works.
+
+### Demo
+todo
 
 ## 📁 Project Structure
 Our repo has the following setup:
@@ -14,12 +17,19 @@ scripts/
 ├── classify_*.py       # scripts to train models on our data
 ├── collect_data.py     # experiment code for collecting data in lab
 └── livetest.py         # online functionality (the thing that classifies data in real-time)
-
 viz/                    # notebooks for manipulating & visualizing our data
 └── ...
 ```
 
-### Additional notes
+## 🧠 How it works
+todo
+
+## 📝 Additional notes
+Please run any scripts from the top level directory (i.e. `BrainCrafterInterface` unless you cloned the repo somewhere else). 
+- In particular, the terminal command will look like `python scripts/script.py`.
+- If you are in the `scripts/` directory or using VSCode, you can adjust the relative paths (i.e. change `data/` to `../data/` and `models/` to `..models/`).
+
+### Data collection
 Example code from class is in the `OpenVEP/` directory.
 
 BEFORE running the code, make sure you update the following variables in `collect_data.py`:
