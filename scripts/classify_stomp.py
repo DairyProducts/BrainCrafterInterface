@@ -5,9 +5,9 @@ from sklearn.model_selection import StratifiedKFold, cross_val_score, train_test
 from sklearn.pipeline import Pipeline
 import joblib
 import matplotlib.pyplot as plt
-
-DATA_FOLDER = "data/"
-DATA_SESSION = "3-4/josh/"
+# what kind of filepath is this?
+DATA_FOLDER = "data/"    # this is data folder. this will always be the same. you cannot change
+DATA_SESSION = "3-4/josh/"  # this is data session folder. this one you can change
 SESSIONS = [5, 6]
 CHANNELS = [2, 3, 4, 6] # in theory these are the only ones that should matter
 
@@ -18,6 +18,11 @@ for session in SESSIONS:
     for i in range(len(filtered_session)):
         filtered_session[i][1] = filtered_session[i][1][CHANNELS, 62:-100]
     alltrials = np.concatenate((alltrials, filtered_session), axis=0)
+
+filtered_session = np.load(f"data/3-4/joshfoot/filtered-session-9.npy", allow_pickle=True)
+for i in range(len(filtered_session)):
+    filtered_session[i][1] = filtered_session[i][1][CHANNELS, 62:-100]
+alltrials = np.concatenate((alltrials, filtered_session), axis=0)
 
 labels = np.array([1 if trial[0] == 'stomp right' else 0 for trial in alltrials])
 eeg = np.array([trial[1] for trial in alltrials])
